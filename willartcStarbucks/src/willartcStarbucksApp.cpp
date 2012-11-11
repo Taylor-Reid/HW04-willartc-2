@@ -1,6 +1,9 @@
 /*
 Greetings!
 
+Now as HW04-willartc-2, a sorted array based venture, since the quad tree
+refused to build more than 5 nodes, despite my best efforts.
+
 Controls:
 Zoom in  = . or + (on keypad)
 Zoom out = , or - (on keypad)
