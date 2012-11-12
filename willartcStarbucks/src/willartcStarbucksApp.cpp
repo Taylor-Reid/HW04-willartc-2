@@ -32,9 +32,9 @@ class willartcStarbucksApp : public AppBasic {
   public:
 	willartcStarbucks* starbucks;
 	int starbucksDataLength;
-	willartcStarbucks* census_2000;
+	CensusEntry* census2000Arr;
 	int census2000DataLength;
-	willartcStarbucks* census_2010;
+	CensusEntry* census2010Arr;
 	int census2010DataLength;
 	Entry* appArr;
 	Surface* surface_;
@@ -121,14 +121,8 @@ void willartcStarbucksApp::setup()
 	for(int z = 0; z < starbucksDataLength; z++){
 		storage.erase((&storage)->begin(), (&storage)->end());
 	}
-
 	Color c = Color(0,255,0);
 	clear();
-	
-	for(int i = 0; i < starbucksDataLength; i++){
-		Entry* temp = &appArr[i];
-		drawPoint(temp->x,temp->y,c);
-	}
 
 	// Read in Census 2000
 
@@ -163,31 +157,77 @@ void willartcStarbucksApp::setup()
 		intwo >> y;
 		census[i].y = y;
 
-		console() << census[i].population << endl;
-		console() << census[i].x << endl;
-		console() << census[i].y << endl;
 		i++;
 	}
 
 	census2000DataLength = census.size();
+	census2000Arr = new CensusEntry[census2000DataLength];
+	for(int q = 0; q < census2000DataLength; q++){
+		census2000Arr[q] = census[q];
+	}
+
+	// Read in Census 2010
+
+	ifstream inthree("Census_2010.csv");
 	
-	/*
-	for(int j = 0; j < ((int)storage.size()); j++) {
-		appArr[j] = storage[j];
+	x = 0.0;
+	y = 0.0;
+	delimiter = ',';
+	i = 0;
+	garbage = 0;
+	popn = 0;
+
+	// Read census 2010 locations into the storage vector
+	while(inthree.good()){
+		CensusEntry* ce = new CensusEntry();
+		census2.push_back(*ce);
+		inthree >> garbage;	// 4 times, 4 columns
+		inthree >> delimiter;
+		inthree >> garbage;
+		inthree >> delimiter;
+		inthree >> garbage;
+		inthree >> delimiter;
+		inthree >> garbage;
+		inthree >> delimiter;
+		inthree >> popn;
+		census2[i].population = popn;
+		inthree >> delimiter;
+		inthree >> x;
+		census2[i].x = x;
+		inthree >> delimiter;
+		inthree >> y;
+		census2[i].y = y;
+
+		i++;
 	}
-	*/
-	//census_2000->build(appArr, storage.size());
-	/*
-	for(int z = 0; z < census2000DataLength; z++){
-		storage.erase((&storage)->begin(), (&storage)->end());
+
+	census2010DataLength = census2.size();
+	census2010Arr = new CensusEntry[census2010DataLength];
+	for(int q = 0; q < census2010DataLength; q++){
+		census2010Arr[q] = census2[q];
 	}
-	*/
+
 	c.r = 255;
 	c.g = 0;
-	c.b = 255;
-	
+	c.b = 0;
 	for(int i = 0; i < census2000DataLength; i++){
-		CensusEntry* temp = &census[i];
+		CensusEntry* temp = &census2000Arr[i];
+		drawPoint(temp->x,temp->y,c);
+	}
+
+	c.r = 0;
+	c.g = 0;
+	c.b = 255;
+	for(int i = 0; i < census2010DataLength; i++){
+		CensusEntry* temp = &census2010Arr[i];
+		drawPoint(temp->x,temp->y,c);
+	}
+
+	c.r = 0;
+	c.g = 255;
+	c.b = 0;
+	for(int i = 0; i < starbucksDataLength; i++){
+		Entry* temp = &appArr[i];
 		drawPoint(temp->x,temp->y,c);
 	}
 
