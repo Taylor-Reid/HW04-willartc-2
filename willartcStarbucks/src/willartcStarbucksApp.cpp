@@ -55,6 +55,7 @@ class willartcStarbucksApp : public AppBasic {
 	void mouseDown( MouseEvent event );
 	void update();
 	void draw();
+	Color* assignStarbucksColor(double x, double y);
 	void keyDown(KeyEvent event);
 	void zoom();
 	void drawPoint(double x, double y, Color c);
@@ -106,7 +107,7 @@ void willartcStarbucksApp::setup()
 		in >> y;
 		storage[i].y = y;
 		i++;
-		console() << row;
+		//console() << row;
 	}
 
 	starbucksDataLength = storage.size();
@@ -206,29 +207,29 @@ void willartcStarbucksApp::setup()
 	for(int q = 0; q < census2010DataLength; q++){
 		census2010Arr[q] = census2[q];
 	}
-
-	c.r = 255;
-	c.g = 0;
-	c.b = 0;
+	
+	//c.r = 255;
+	//c.g = 0;
+	//c.b = 0;
 	for(int i = 0; i < census2000DataLength; i++){
 		CensusEntry* temp = &census2000Arr[i];
-		drawPoint(temp->x,temp->y,c);
+		Entry* starTemp = starbucks->getNearest(temp->x,temp->y);
+		drawPoint(temp->x,temp->y,*assignStarbucksColor(starTemp->x,starTemp->y));
 	}
 
-	c.r = 0;
-	c.g = 0;
-	c.b = 255;
 	for(int i = 0; i < census2010DataLength; i++){
 		CensusEntry* temp = &census2010Arr[i];
-		drawPoint(temp->x,temp->y,c);
+		Entry* starTemp = starbucks->getNearest(temp->x,temp->y);
+		drawPoint(temp->x,temp->y,*assignStarbucksColor(starTemp->x,starTemp->y));
 	}
-
-	c.r = 0;
-	c.g = 255;
-	c.b = 0;
+	
+	//c.r = 0;
+	//c.g = 255;
+	//c.b = 0;
 	for(int i = 0; i < starbucksDataLength; i++){
 		Entry* temp = &appArr[i];
-		drawPoint(temp->x,temp->y,c);
+		Color* k = assignStarbucksColor(temp->x, temp->y);
+		drawPoint(temp->x,temp->y,*k);
 	}
 
 }
@@ -255,29 +256,36 @@ void willartcStarbucksApp::clear(){
 	}
 }
 
+Color* willartcStarbucksApp::assignStarbucksColor(double x, double y){
+	int r = floor((1-x)*(1-y)*255);
+	int g = floor(sin(3.14159*x)*sin(3.14159*y)*255);
+	int b = floor(x*y*255);
+	return &Color(r,g,b);
+}
+
 void willartcStarbucksApp::mouseDown( MouseEvent event )
 {
 	// RED
-	Color c = Color(255, 0, 0);
+	Color c = Color(255, 255, 0);
 
 	// New line
-	console() << endl;
+	//console() << endl;
 
 	// Get current location
 	int x = event.getX();
 	int y = event.getY();
 
-	console() << "Print current location as int" << endl;
-	console() << x << endl;
-	console() << y << endl;
+	//console() << "Print current location as int" << endl;
+	//console() << x << endl;
+	//console() << y << endl;
 
 	// Convert current location into 0 < double < 1
 	double xd = (((double)x)-10)/kSurfaceSize;
 	double yd = 1-((((double)y)-10)/(kSurfaceSize*0.6));
 
-	console() << "Print converted current location" << endl;
-	console() << xd << endl;
-	console() << yd << endl;
+	//console() << "Print converted current location" << endl;
+	//console() << xd << endl;
+	//console() << yd << endl;
 
 	// Draw current location RED
 	//int index = 4*(x + y*kSurfaceSize);
@@ -294,22 +302,23 @@ void willartcStarbucksApp::mouseDown( MouseEvent event )
 
 	// Get nearest Starbucks doubles
 	xd = temp->x;
-	yd = (temp->y);
+	yd = 1-(temp->y);
 
-	console() << "Print nearest Starbucks doubles" << endl;
-	console() << xd << endl;
-	console() << yd << endl;
+	//console() << "Print nearest Starbucks doubles" << endl;
+	//console() << xd << endl;
+	//console() << yd << endl;
 
 	// Convert nearest Starbucks doubles to ints (with scaling)
 	x = floor(kSurfaceSize*xd) + 10;
 	y = floor(kSurfaceSize*yd*0.6) + 10;
 
-	console() << "Print nearest Starbucks ints (converted)" << endl;
-	console() << x << endl;
-	console() << y << endl;
+	//console() << "Print nearest Starbucks ints (converted)" << endl;
+	//console() << x << endl;
+	//console() << y << endl;
 
 	// Draw closest starbucks BLUE
-	c.r = 0;
+	c.r = 255;
+	c.g = 255;
 	c.b = 255;
 	index = 4*(x + y*kSurfaceSize);
 	pixels[index] = c.r;
@@ -320,11 +329,11 @@ void willartcStarbucksApp::mouseDown( MouseEvent event )
 void willartcStarbucksApp::keyDown(KeyEvent event)
 {
 	if((event.getCode() == KeyEvent::KEY_KP_PLUS)||(event.getCode() == KeyEvent::KEY_PERIOD)){
-		console() << "Zoom in" << endl;
+		//console() << "Zoom in" << endl;
 		zoomConst *= 2;
 	} 
 	if((event.getCode() == KeyEvent::KEY_KP_MINUS)||(event.getCode() == KeyEvent::KEY_COMMA)){
-		console() << "Zoom out" << endl;
+		//console() << "Zoom out" << endl;
 		if(zoomConst != 1){
 			zoomConst /= 2;
 			if(xOffset > (kSurfaceSize - (kSurfaceSize/zoomConst))){
@@ -337,28 +346,28 @@ void willartcStarbucksApp::keyDown(KeyEvent event)
 	}
 	// Pan up
 	if((event.getCode() == KeyEvent::KEY_UP)||(event.getCode() == KeyEvent::KEY_w)){
-		console() << "Pan up" << endl;
+		//console() << "Pan up" << endl;
 		if(yOffset > 0){
 			yOffset -= 16;
 		}
 	}
 	// Pan down
 	if((event.getCode() == KeyEvent::KEY_DOWN)||(event.getCode() == KeyEvent::KEY_s)){
-		console() << "Pan down" << endl;
+		//console() << "Pan down" << endl;
 		if(yOffset < (kSurfaceSize - (kSurfaceSize/zoomConst))){
 			yOffset += 16;
 		}
 	}
 	// Pan right
 	if((event.getCode() == KeyEvent::KEY_RIGHT)||(event.getCode() == KeyEvent::KEY_d)){
-		console() << "Pan right" << endl;
+		//console() << "Pan right" << endl;
 		if(xOffset < (kSurfaceSize - (kSurfaceSize/zoomConst))){
 			xOffset += 16;
 		}
 	}
 	// Pan left
 	if((event.getCode() == KeyEvent::KEY_LEFT)||(event.getCode() == KeyEvent::KEY_a)){
-		console() << "Pan left" << endl;
+		//console() << "Pan left" << endl;
 		if(xOffset > 0){
 			xOffset -= 16;
 		}
@@ -377,7 +386,6 @@ void willartcStarbucksApp::zoom(){
 			zoomPix[index] = pixels[index2];
 			zoomPix[index+1] = pixels[index2+1];
 			zoomPix[index+2] = pixels[index2+2];
-			
 		}
 	}
 }
@@ -390,13 +398,10 @@ void willartcStarbucksApp::update()
 
 void willartcStarbucksApp::draw()
 {
-
-
 	// clear out the window with black
 	//gl::clear( Color( 0, 0, 0 ) );
 	//gl::draw(*surface_);
 	gl::draw(*zoomSurf);
-
 }
 
 void testGetNearest(){
