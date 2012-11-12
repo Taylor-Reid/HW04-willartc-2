@@ -12,7 +12,6 @@ Pan = arrow keys or w,a,s,d
 */
 #include "Resources.h"
 #include "cinder/app/AppBasic.h"
-#include "cinder/CinderResources.h"
 #include "cinder/gl/gl.h"
 #include "cinder/gl/Texture.h"
 #include "cinder/ImageIo.h"
@@ -44,6 +43,8 @@ class willartcStarbucksApp : public AppBasic {
 	int zoomConst;
 	int yOffset;  // For zoom
 	int xOffset;  // For zoom
+	int* blockIds2000;
+	int* blockIds2010;
 	static const int kAppWidth = 1024;
 	static const int kAppHeight = 640;
 	static const int kSurfaceSize = 1024;
@@ -51,7 +52,6 @@ class willartcStarbucksApp : public AppBasic {
 	void prepareSettings(Settings* settings);
 	void setup();
 	void clear();
-	void testGetNearest();
 	void mouseDown( MouseEvent event );
 	void update();
 	void draw();
@@ -69,8 +69,35 @@ void willartcStarbucksApp::prepareSettings(Settings* settings){
 
 void willartcStarbucksApp::setup()
 {
+	//Surface baby_picture(loadImage( loadResource(RES_BABY) ));
+
+
+	//Surface map_picture(loadImage( loadResource(RES_MAP) ));
+	//uint8_t* mapPixels = (map_picture).getData();
 	surface_ = new Surface(kSurfaceSize,kSurfaceSize,true);
 	pixels = (*surface_).getData();
+	/*
+	Surface map = loadImage( loadResource(RES_MAP) );
+	uint8_t* mapPixels = map.getData();
+
+	for(int y = 0; y < 1024; y++){
+		for(int x = 0; x < 626; x++){
+			int offset2 = 3*(x + y*kSurfaceSize);
+			int offset1 = 3*(x + y*1024);
+			mapPixels[offset1] = pixels[offset2];
+			mapPixels[offset1 + 1] = pixels[offset2 + 1];
+			mapPixels[offset1 + 2] = pixels[offset2 + 2];
+		}
+	}
+	*/
+	/*
+	for(int z = 0; z < 626; z++){
+		for(int i = 0; i < kSurfaceSize; i++){
+			int index = i+(z*kSurfaceSize);
+			pixels[index] = mapPixels[index];
+		}
+	}
+	*/
 	zoomSurf = new Surface(kSurfaceSize,kSurfaceSize,true);
 	zoomPix = (*zoomSurf).getData();
 	zoomConst = 1;
@@ -136,6 +163,8 @@ void willartcStarbucksApp::setup()
 	i = 0;
 	int garbage = 0;
 	int popn = 0;
+	int block = 0;
+	blockIds2000 = new int[10];
 
 	// Read census 2000 locations into the storage vector
 	while(intwo.good()){
@@ -147,8 +176,9 @@ void willartcStarbucksApp::setup()
 		intwo >> delimiter;
 		intwo >> garbage;
 		intwo >> delimiter;
-		intwo >> garbage;
+		intwo >> block;
 		intwo >> delimiter;
+		census[i].blockId = block;
 		intwo >> popn;
 		census[i].population = popn;
 		intwo >> delimiter;
@@ -157,6 +187,8 @@ void willartcStarbucksApp::setup()
 		intwo >> delimiter;
 		intwo >> y;
 		census[i].y = y;
+
+		blockIds2000[block] += popn;
 
 		i++;
 	}
@@ -177,6 +209,8 @@ void willartcStarbucksApp::setup()
 	i = 0;
 	garbage = 0;
 	popn = 0;
+	block = 0;
+	blockIds2010 = new int[10];
 
 	// Read census 2010 locations into the storage vector
 	while(inthree.good()){
@@ -188,8 +222,9 @@ void willartcStarbucksApp::setup()
 		inthree >> delimiter;
 		inthree >> garbage;
 		inthree >> delimiter;
-		inthree >> garbage;
+		inthree >> block;
 		inthree >> delimiter;
+		census2[i].blockId = block;
 		inthree >> popn;
 		census2[i].population = popn;
 		inthree >> delimiter;
@@ -199,8 +234,16 @@ void willartcStarbucksApp::setup()
 		inthree >> y;
 		census2[i].y = y;
 
+		blockIds2010[block] += popn;
+
 		i++;
 	}
+	/*
+	int diff = 0;
+	for(int d = 1; d<10; d++){
+		diff = blockIds2010[d] - blockIds2000[d];
+	}
+	*/
 
 	census2010DataLength = census2.size();
 	census2010Arr = new CensusEntry[census2010DataLength];
@@ -214,13 +257,29 @@ void willartcStarbucksApp::setup()
 	for(int i = 0; i < census2000DataLength; i++){
 		CensusEntry* temp = &census2000Arr[i];
 		Entry* starTemp = starbucks->getNearest(temp->x,temp->y);
-		drawPoint(temp->x,temp->y,*assignStarbucksColor(starTemp->x,starTemp->y));
+		Color* k = assignStarbucksColor(starTemp->x,starTemp->y);
+			int diff = blockIds2010[temp->blockId]-blockIds2000[temp->blockId];
+				k->g = 127;
+			if(diff >= 0){
+				k->g += (127*(diff/17694259))/4;
+			} else {
+				k->g += (127*(diff/-3107888))/4;
+			}
+		drawPoint(temp->x,temp->y,*k);
 	}
 
 	for(int i = 0; i < census2010DataLength; i++){
 		CensusEntry* temp = &census2010Arr[i];
 		Entry* starTemp = starbucks->getNearest(temp->x,temp->y);
-		drawPoint(temp->x,temp->y,*assignStarbucksColor(starTemp->x,starTemp->y));
+		Color* k = assignStarbucksColor(starTemp->x,starTemp->y);
+			int diff = blockIds2010[temp->blockId]-blockIds2000[temp->blockId];
+				k->g = 127;
+			if(diff >= 0){
+				k->g += (127*(diff/17694259))/4;
+			} else {
+				k->g += (127*(diff/-3107888))/4;
+			}
+		drawPoint(temp->x,temp->y,*k);
 	}
 	
 	//c.r = 0;
@@ -229,6 +288,7 @@ void willartcStarbucksApp::setup()
 	for(int i = 0; i < starbucksDataLength; i++){
 		Entry* temp = &appArr[i];
 		Color* k = assignStarbucksColor(temp->x, temp->y);
+		k->g = 255;
 		drawPoint(temp->x,temp->y,*k);
 	}
 
@@ -257,8 +317,17 @@ void willartcStarbucksApp::clear(){
 }
 
 Color* willartcStarbucksApp::assignStarbucksColor(double x, double y){
-	int r = floor((1-x)*(1-y)*255);
-	int g = floor((sin(3.14159*x)*sin(3.14159*y)-0.5)*255);
+	int r = 0;
+	int isRed = (floor((x*y)*100));
+
+	if(isRed%2 == 1){
+		r = 255;
+	} else {
+		r = 0;
+	}
+
+	//floor((1-x)*(1-y)*255);
+	int g = 0; //floor((sin(3.14159*x)*sin(3.14159*y)-0.5)*255);
 	if(g < 0) { g = 0;}
 	int b = floor(x*y*255);
 	return &Color(r,g,b);
@@ -407,33 +476,6 @@ void willartcStarbucksApp::draw()
 	//gl::clear( Color( 0, 0, 0 ) );
 	//gl::draw(*surface_);
 	gl::draw(*zoomSurf);
-}
-
-void testGetNearest(){
-	console() << "TEST RESULTS" << endl;
-	willartcStarbucks* tempTree = new willartcStarbucks();
-	Entry* e15 = tempTree->getNearest(0.0, 0.0);
-	console() << "Identifier = " << e15->identifier << ", X = " << e15->x << ", Y = " << e15->y << endl;
-	Entry* e1 = tempTree->getNearest(0.5, 0.0);
-	console() << "Identifier = " << e1->identifier << ", X = " << e1->x << ", Y = " << e1->y << endl;
-	Entry* e2 = tempTree->getNearest(0.0, 0.5);
-	console() << "Identifier = " << e2->identifier << ", X = " << e2->x << ", Y = " << e2->y << endl;
-	Entry* e3 = tempTree->getNearest(1.0, 0.0);
-	console() << "Identifier = " << e3->identifier << ", X = " << e3->x << ", Y = " << e3->y << endl;
-	Entry* e4 = tempTree->getNearest(0.0, 1.0);
-	console() << "Identifier = " << e4->identifier << ", X = " << e4->x << ", Y = " << e4->y << endl;
-	Entry* e5 = tempTree->getNearest(1.0, 0.5);
-	console() << "Identifier = " << e5->identifier << ", X = " << e5->x << ", Y = " << e5->y << endl;
-	Entry* e6 = tempTree->getNearest(0.5, 1.0);
-	console() << "Identifier = " << e6->identifier << ", X = " << e6->x << ", Y = " << e6->y << endl;
-	Entry* e7 = tempTree->getNearest(0.7, 0.7);
-	console() << "Identifier = " << e7->identifier << ", X = " << e7->x << ", Y = " << e7->y << endl;
-	Entry* e8 = tempTree->getNearest(0.8, 0.8);
-	console() << "Identifier = " << e8->identifier << ", X = " << e8->x << ", Y = " << e8->y << endl;
-	Entry* e9 = tempTree->getNearest(0.9, 0.9);
-	console() << "Identifier = " << e9->identifier << ", X = " << e9->x << ", Y = " << e9->y << endl;
-	Entry* e10 = tempTree->getNearest(1.0, 1.0);
-	console() << "Identifier = " << e10->identifier << ", X = " << e10->x << ", Y = " << e10->y << endl;
 }
 
 CINDER_APP_BASIC( willartcStarbucksApp, RendererGl )
