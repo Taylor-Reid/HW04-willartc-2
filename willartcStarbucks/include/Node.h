@@ -1,3 +1,7 @@
+/*
+A class for the original quad tree data structure, which failed and was 
+replaced by an unsorted array.
+*/
 #include "Starbucks.h"
 #include "CensusEntry.h"
 

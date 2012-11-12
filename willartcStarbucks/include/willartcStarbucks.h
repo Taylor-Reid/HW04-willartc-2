@@ -1,3 +1,8 @@
+/*
+Builds an unsorted array data structure, stores Starbucks Entrys in it, 
+and returns the nearest Starbucks location to any given pair of coordinates 
+that are doubles between 0 and 1.
+*/
 #include "Node.h"
 #include <iostream>
 #include <math.h>

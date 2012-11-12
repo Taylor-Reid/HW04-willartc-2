@@ -8,6 +8,23 @@ Controls:
 Zoom in  = . or + (on keypad)
 Zoom out = , or - (on keypad)
 Pan = arrow keys or w,a,s,d
+Clicking on the surface prints a yellow pixel, and the closest starbucks location turns white.
+	Note: the clicking function does not work correctly when the window is not completely zoomed out.
+
+Color assignment:
+
+Red:
+	All starbucks locations where floor((x*y)*100)%2 is odd have 100% red,
+		even numbers have 0% red.
+	Census locations are colored red according to their nearest Starbucks locations.
+
+Green:
+	All Starbucks locations get 100% green.
+	Census locations get green scaled by the population difference of their associated block ID.
+
+Blue:
+	All points get blue scaled according to the product of their  coordinates (x*y),
+		this is an attempt to give every point a different color.
 
 */
 #include "Resources.h"
@@ -68,36 +85,12 @@ void willartcStarbucksApp::prepareSettings(Settings* settings){
 }
 
 void willartcStarbucksApp::setup()
-{
-	//Surface baby_picture(loadImage( loadResource(RES_BABY) ));
-
-
-	//Surface map_picture(loadImage( loadResource(RES_MAP) ));
-	//uint8_t* mapPixels = (map_picture).getData();
+{	
+	// Master surface
 	surface_ = new Surface(kSurfaceSize,kSurfaceSize,true);
 	pixels = (*surface_).getData();
-	/*
-	Surface map = loadImage( loadResource(RES_MAP) );
-	uint8_t* mapPixels = map.getData();
 
-	for(int y = 0; y < 1024; y++){
-		for(int x = 0; x < 626; x++){
-			int offset2 = 3*(x + y*kSurfaceSize);
-			int offset1 = 3*(x + y*1024);
-			mapPixels[offset1] = pixels[offset2];
-			mapPixels[offset1 + 1] = pixels[offset2 + 1];
-			mapPixels[offset1 + 2] = pixels[offset2 + 2];
-		}
-	}
-	*/
-	/*
-	for(int z = 0; z < 626; z++){
-		for(int i = 0; i < kSurfaceSize; i++){
-			int index = i+(z*kSurfaceSize);
-			pixels[index] = mapPixels[index];
-		}
-	}
-	*/
+	// Surface for zoom function, this is the surface that the user views
 	zoomSurf = new Surface(kSurfaceSize,kSurfaceSize,true);
 	zoomPix = (*zoomSurf).getData();
 	zoomConst = 1;
@@ -105,14 +98,10 @@ void willartcStarbucksApp::setup()
 	xOffset = 0;
 	clear();
 
-	// Read everything in a vector
-	// Then copy to an array
-	// Then call create a QuadTree
-	// The call build with the length of the vector
-	// Then read in data from the census' and call getNearest
-
+	// Initialize Starbucks data structure
 	starbucks = new willartcStarbucks();
 
+	// Read in Starbucks_2006.csv
 	ifstream in("Starbucks_2006.csv");
 
 	string row;
@@ -134,48 +123,45 @@ void willartcStarbucksApp::setup()
 		in >> y;
 		storage[i].y = y;
 		i++;
-		//console() << row;
 	}
 
-	starbucksDataLength = storage.size();
+	// Reads the vector into an array in order to call build()
 	appArr = new Entry[storage.size()];
+	starbucksDataLength = storage.size();
 
 	for(int j = 0; j < ((int)storage.size()); j++) {
 		appArr[j] = storage[j];
 	}
 	
-	starbucks->build(appArr, storage.size());
+	starbucks->build(appArr, storage.size());  // Build()
 	
-	for(int z = 0; z < starbucksDataLength; z++){
-		storage.erase((&storage)->begin(), (&storage)->end());
-	}
-	Color c = Color(0,255,0);
-	clear();
-
 	// Read in Census 2000
-
-	//census_2000 = new willartcStarbucks();
 	ifstream intwo("Census_2000.csv");
 	
 	x = 0.0;
 	y = 0.0;
 	delimiter = ',';
 	i = 0;
-	int garbage = 0;
-	int popn = 0;
+	int state = 0;
+	int county = 0;
+	int censusTract = 0;
 	int block = 0;
+	int popn = 0;
 	blockIds2000 = new int[10];
 
 	// Read census 2000 locations into the storage vector
 	while(intwo.good()){
 		CensusEntry* ce = new CensusEntry();
 		census.push_back(*ce);
-		intwo >> garbage;	// 4 times, 4 columns
+		intwo >> state;	// 4 times, 4 columns
 		intwo >> delimiter;
-		intwo >> garbage;
+		census[i].stateId = state;
+		intwo >> county;
 		intwo >> delimiter;
-		intwo >> garbage;
+		census[i].countyId = county;
+		intwo >> censusTract;
 		intwo >> delimiter;
+		census[i].censusId = censusTract;
 		intwo >> block;
 		intwo >> delimiter;
 		census[i].blockId = block;
@@ -193,6 +179,8 @@ void willartcStarbucksApp::setup()
 		i++;
 	}
 
+	// Reads the Census_2000 vector into an array
+	// Probably unnecessary
 	census2000DataLength = census.size();
 	census2000Arr = new CensusEntry[census2000DataLength];
 	for(int q = 0; q < census2000DataLength; q++){
@@ -202,26 +190,22 @@ void willartcStarbucksApp::setup()
 	// Read in Census 2010
 
 	ifstream inthree("Census_2010.csv");
-	
-	x = 0.0;
-	y = 0.0;
-	delimiter = ',';
-	i = 0;
-	garbage = 0;
-	popn = 0;
-	block = 0;
+	i=0;
 	blockIds2010 = new int[10];
 
 	// Read census 2010 locations into the storage vector
 	while(inthree.good()){
 		CensusEntry* ce = new CensusEntry();
 		census2.push_back(*ce);
-		inthree >> garbage;	// 4 times, 4 columns
+		inthree >> state;	// 4 times, 4 columns
 		inthree >> delimiter;
-		inthree >> garbage;
+		census2[i].stateId = state;
+		inthree >> county;
 		inthree >> delimiter;
-		inthree >> garbage;
+		census2[i].countyId = county;
+		inthree >> censusTract;
 		inthree >> delimiter;
+		census2[i].censusId = censusTract;
 		inthree >> block;
 		inthree >> delimiter;
 		census2[i].blockId = block;
@@ -233,27 +217,33 @@ void willartcStarbucksApp::setup()
 		inthree >> delimiter;
 		inthree >> y;
 		census2[i].y = y;
-
 		blockIds2010[block] += popn;
 
 		i++;
 	}
-	/*
-	int diff = 0;
-	for(int d = 1; d<10; d++){
-		diff = blockIds2010[d] - blockIds2000[d];
-	}
-	*/
 
+	// Reads the Census_2000 vector into an array
+	// Probably unnecessary
 	census2010DataLength = census2.size();
 	census2010Arr = new CensusEntry[census2010DataLength];
 	for(int q = 0; q < census2010DataLength; q++){
 		census2010Arr[q] = census2[q];
 	}
 	
-	//c.r = 255;
-	//c.g = 0;
-	//c.b = 0;
+	/*
+	// Used to get the maximum population differences, which were then
+	// hardcoded.  Which is very, very, very, bad practice.
+	int diff = 0;
+	for(int d = 1; d<10; d++){
+		diff = blockIds2010[d] - blockIds2000[d];
+	}
+	*/
+
+	// Prepare to draw points
+	Color c = Color(0,0,0);
+	clear();
+
+	// Get the color values and draw the census points
 	for(int i = 0; i < census2000DataLength; i++){
 		CensusEntry* temp = &census2000Arr[i];
 		Entry* starTemp = starbucks->getNearest(temp->x,temp->y);
@@ -282,9 +272,7 @@ void willartcStarbucksApp::setup()
 		drawPoint(temp->x,temp->y,*k);
 	}
 	
-	//c.r = 0;
-	//c.g = 255;
-	//c.b = 0;
+	// Draw the Starbucks locations
 	for(int i = 0; i < starbucksDataLength; i++){
 		Entry* temp = &appArr[i];
 		Color* k = assignStarbucksColor(temp->x, temp->y);
@@ -293,7 +281,7 @@ void willartcStarbucksApp::setup()
 	}
 
 }
-
+	// Streamlines the drawing process
 void willartcStarbucksApp::drawPoint(double x, double y, Color c){
 		int xI = floor(kSurfaceSize*x) + 10;
 		int yI = floor(kSurfaceSize*(1-y)*0.6) + 10;
@@ -303,8 +291,8 @@ void willartcStarbucksApp::drawPoint(double x, double y, Color c){
 		pixels[index+2] = c.b;
 }
 
+	// I've had better luck with my own clear() function
 void willartcStarbucksApp::clear(){
-
 	Color c = Color(0,0,0);
 	for(int y = 0; y < kSurfaceSize; y++){
 		for(int x = 0; x < kSurfaceSize; x++){
@@ -316,6 +304,7 @@ void willartcStarbucksApp::clear(){
 	}
 }
 
+	//  Creates short-term color data for drawing points
 Color* willartcStarbucksApp::assignStarbucksColor(double x, double y){
 	int r = 0;
 	int isRed = (floor((x*y)*100));
@@ -333,6 +322,8 @@ Color* willartcStarbucksApp::assignStarbucksColor(double x, double y){
 	return &Color(r,g,b);
 }
 
+
+	// Tests getNearest()
 void willartcStarbucksApp::mouseDown( MouseEvent event )
 {
 	// RED
@@ -400,6 +391,7 @@ void willartcStarbucksApp::mouseDown( MouseEvent event )
 	pixels[index+2] = c.b;
 }
 
+	// For zoom controls
 void willartcStarbucksApp::keyDown(KeyEvent event)
 {
 	if((event.getCode() == KeyEvent::KEY_KP_PLUS)||(event.getCode() == KeyEvent::KEY_PERIOD)){
@@ -448,7 +440,7 @@ void willartcStarbucksApp::keyDown(KeyEvent event)
 	}
 
 }
-
+	// Transfers a section the master surface to another zoom surface for zooming and panning
 void willartcStarbucksApp::zoom(){
 	for(int g = 0; g < kSurfaceSize; g++){
 		for(int i = 0; i < kSurfaceSize; i++){
