@@ -1,7 +1,7 @@
 /*
 Greetings!
 
-Now as HW04-willartc-2, a sorted array based venture, since the quad tree
+Now as HW04-willartc-2, an unsorted array based venture, since the quad tree
 refused to build more than 5 nodes, despite my best efforts.
 
 Controls:
@@ -26,12 +26,17 @@ using namespace std;
 class willartcStarbucksApp : public AppBasic {
   private:
 	vector <Entry> storage;
+	vector <CensusEntry> census;
+	vector <CensusEntry> census2;
 
   public:
-	
-	willartcStarbucks* quadTree;
-	Entry* appArr;
+	willartcStarbucks* starbucks;
 	int starbucksDataLength;
+	willartcStarbucks* census_2000;
+	int census2000DataLength;
+	willartcStarbucks* census_2010;
+	int census2010DataLength;
+	Entry* appArr;
 	Surface* surface_;
 	uint8_t* pixels;
 	Surface* zoomSurf;
@@ -46,13 +51,13 @@ class willartcStarbucksApp : public AppBasic {
 	void prepareSettings(Settings* settings);
 	void setup();
 	void clear();
-	void appendToStorage(Entry* e);
 	void testGetNearest();
 	void mouseDown( MouseEvent event );
 	void update();
 	void draw();
 	void keyDown(KeyEvent event);
 	void zoom();
+	void drawPoint(double x, double y, Color c);
 };
 
 // Standard prepare settings
@@ -78,11 +83,9 @@ void willartcStarbucksApp::setup()
 	// The call build with the length of the vector
 	// Then read in data from the census' and call getNearest
 
-	quadTree = new willartcStarbucks();
+	starbucks = new willartcStarbucks();
 
 	ifstream in("Starbucks_2006.csv");
-	//ifstream in("SortedData.csv");
-	//vector <Entry> storage;
 
 	string row;
 	double x;
@@ -90,6 +93,7 @@ void willartcStarbucksApp::setup()
 	char delimiter;
 	int i = 0;
 
+	// Read starbucks locations into the storage vector
 	while(in.good()){
 		Entry* e = new Entry();
 		storage.push_back(*e);
@@ -105,39 +109,97 @@ void willartcStarbucksApp::setup()
 		console() << row;
 	}
 
-	Entry* e = new Entry[storage.size()];
 	starbucksDataLength = storage.size();
 	appArr = new Entry[storage.size()];
 
 	for(int j = 0; j < ((int)storage.size()); j++) {
 		appArr[j] = storage[j];
 	}
-	e = appArr;
-
 	
-	quadTree->build(e, storage.size());
+	starbucks->build(appArr, storage.size());
 	
 	for(int z = 0; z < starbucksDataLength; z++){
 		storage.erase((&storage)->begin(), (&storage)->end());
 	}
-
-	int traverseIterator = quadTree->traverse(quadTree->getSentinel());
-	console() << traverseIterator << endl;
 
 	Color c = Color(0,255,0);
 	clear();
 	
 	for(int i = 0; i < starbucksDataLength; i++){
 		Entry* temp = &appArr[i];
-		double xf = temp->x;
-		int xI = floor(kSurfaceSize*xf) + 10;
-		double yf = (1-temp->y);
-		int yI = floor(kSurfaceSize*yf*0.6) + 10;
+		drawPoint(temp->x,temp->y,c);
+	}
+
+	// Read in Census 2000
+
+	//census_2000 = new willartcStarbucks();
+	ifstream intwo("Census_2000.csv");
+	
+	x = 0.0;
+	y = 0.0;
+	delimiter = ',';
+	i = 0;
+	int garbage = 0;
+	int popn = 0;
+
+	// Read census 2000 locations into the storage vector
+	while(intwo.good()){
+		CensusEntry* ce = new CensusEntry();
+		census.push_back(*ce);
+		intwo >> garbage;	// 4 times, 4 columns
+		intwo >> delimiter;
+		intwo >> garbage;
+		intwo >> delimiter;
+		intwo >> garbage;
+		intwo >> delimiter;
+		intwo >> garbage;
+		intwo >> delimiter;
+		intwo >> popn;
+		census[i].population = popn;
+		intwo >> delimiter;
+		intwo >> x;
+		census[i].x = x;
+		intwo >> delimiter;
+		intwo >> y;
+		census[i].y = y;
+
+		console() << census[i].population << endl;
+		console() << census[i].x << endl;
+		console() << census[i].y << endl;
+		i++;
+	}
+
+	census2000DataLength = census.size();
+	
+	/*
+	for(int j = 0; j < ((int)storage.size()); j++) {
+		appArr[j] = storage[j];
+	}
+	*/
+	//census_2000->build(appArr, storage.size());
+	/*
+	for(int z = 0; z < census2000DataLength; z++){
+		storage.erase((&storage)->begin(), (&storage)->end());
+	}
+	*/
+	c.r = 255;
+	c.g = 0;
+	c.b = 255;
+	
+	for(int i = 0; i < census2000DataLength; i++){
+		CensusEntry* temp = &census[i];
+		drawPoint(temp->x,temp->y,c);
+	}
+
+}
+
+void willartcStarbucksApp::drawPoint(double x, double y, Color c){
+		int xI = floor(kSurfaceSize*x) + 10;
+		int yI = floor(kSurfaceSize*(1-y)*0.6) + 10;
 		int index = 4*(xI + yI*kSurfaceSize);
 		pixels[index] = c.r;
 		pixels[index+1] = c.g;
 		pixels[index+2] = c.b;
-	}
 }
 
 void willartcStarbucksApp::clear(){
@@ -188,7 +250,7 @@ void willartcStarbucksApp::mouseDown( MouseEvent event )
 	// All of the local variables may be reused
 
 	// Get nearest Starbucks
-	Entry* temp = quadTree->getNearest(xd,yd);
+	Entry* temp = starbucks->getNearest(xd,yd);
 
 	// Get nearest Starbucks doubles
 	xd = temp->x;

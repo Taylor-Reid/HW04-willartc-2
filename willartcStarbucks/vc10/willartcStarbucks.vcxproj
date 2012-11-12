@@ -109,6 +109,7 @@
     <ClCompile Include="..\src\willartcStarbucksApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\CensusEntry.h" />
     <ClInclude Include="..\include\Node.h" />
     <ClInclude Include="..\include\willartcStarbucks.h" />
     <ClInclude Include="..\include\Resources.h" />

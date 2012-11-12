@@ -1,4 +1,5 @@
 #include "Starbucks.h"
+#include "CensusEntry.h"
 
 class Node {
 public:
