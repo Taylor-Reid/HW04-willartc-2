@@ -258,7 +258,8 @@ void willartcStarbucksApp::clear(){
 
 Color* willartcStarbucksApp::assignStarbucksColor(double x, double y){
 	int r = floor((1-x)*(1-y)*255);
-	int g = floor(sin(3.14159*x)*sin(3.14159*y)*255);
+	int g = floor((sin(3.14159*x)*sin(3.14159*y)-0.5)*255);
+	if(g < 0) { g = 0;}
 	int b = floor(x*y*255);
 	return &Color(r,g,b);
 }
@@ -309,6 +310,10 @@ void willartcStarbucksApp::mouseDown( MouseEvent event )
 	//console() << yd << endl;
 
 	// Convert nearest Starbucks doubles to ints (with scaling)
+
+	//double xd = (((double)x)-10)/kSurfaceSize;
+	//double yd = 1-((((double)y)-10)/(kSurfaceSize*0.6));
+
 	x = floor(kSurfaceSize*xd) + 10;
 	y = floor(kSurfaceSize*yd*0.6) + 10;
 
